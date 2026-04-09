@@ -84,6 +84,10 @@ class Vector:
                 )
 
                 return AlibabaCloudMySQLVectorFactory
+            case VectorType.DINGODB:
+                from core.rag.datasource.vdb.dingodb.dingodb_vector import DingoDBVectorFactory
+
+                return DingoDBVectorFactory
             case VectorType.MYSCALE:
                 from core.rag.datasource.vdb.myscale.myscale_vector import MyScaleVectorFactory
 

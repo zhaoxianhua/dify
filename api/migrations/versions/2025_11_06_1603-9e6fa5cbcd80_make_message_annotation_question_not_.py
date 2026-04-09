@@ -18,43 +18,64 @@ depends_on = None
 
 def upgrade():
     bind = op.get_bind()
-    message_annotations = sa.table(
-        "message_annotations",
-        sa.column("id", sa.String),
-        sa.column("message_id", sa.String),
-        sa.column("question", sa.Text),
-    )
-    messages = sa.table(
-        "messages",
-        sa.column("id", sa.String),
-        sa.column("query", sa.Text),
-    )
-    update_question_from_message = (
-        sa.update(message_annotations)
-        .where(
-            sa.and_(
-                message_annotations.c.question.is_(None),
-                message_annotations.c.message_id.isnot(None),
+    db_type = bind.dialect.name
+
+    if db_type == "postgresql":
+        # PG 保留原有 ORM 逻辑，不做修改
+        message_annotations = sa.table(
+            "message_annotations",
+            sa.column("id", sa.String),
+            sa.column("message_id", sa.String),
+            sa.column("question", sa.Text),
+        )
+        messages = sa.table(
+            "messages",
+            sa.column("id", sa.String),
+            sa.column("query", sa.Text),
+        )
+        update_question_from_message = (
+            sa.update(message_annotations)
+            .where(
+                sa.and_(
+                    message_annotations.c.question.is_(None),
+                    message_annotations.c.message_id.isnot(None),
+                )
+            )
+            .values(
+                question=sa.select(sa.func.coalesce(messages.c.query, ""))
+                .where(messages.c.id == message_annotations.c.message_id)
+                .scalar_subquery()
             )
         )
-        .values(
-            question=sa.select(sa.func.coalesce(messages.c.query, ""))
-            .where(messages.c.id == message_annotations.c.message_id)
-            .scalar_subquery()
-        )
-    )
-    bind.execute(update_question_from_message)
+        bind.execute(update_question_from_message)
 
-    fill_remaining_questions = (
-        sa.update(message_annotations)
-        .where(message_annotations.c.question.is_(None))
-        .values(question="")
-    )
-    bind.execute(fill_remaining_questions)
+        fill_remaining_questions = (
+            sa.update(message_annotations)
+            .where(message_annotations.c.question.is_(None))
+            .values(question="")
+        )
+        bind.execute(fill_remaining_questions)
+    else:
+        op.execute("""
+            UPDATE message_annotations, messages
+            SET message_annotations.question = COALESCE(messages.query, '')
+            WHERE message_annotations.message_id = messages.id
+              AND message_annotations.question IS NULL
+              AND message_annotations.message_id IS NOT NULL;
+        """)
+        # 第二步：填充剩余无关联的空 question 字段
+        op.execute("""
+            UPDATE message_annotations
+            SET question = ''
+            WHERE question IS NULL;
+        """)
+
+    # 第三步：修改字段为 NOT NULL（ORM 语法兼容 MySQL/PG）
     with op.batch_alter_table('message_annotations', schema=None) as batch_op:
         batch_op.alter_column('question', existing_type=sa.TEXT(), nullable=False)
 
 
 def downgrade():
+    # 降级逻辑保持不变（ORM 语法兼容双库）
     with op.batch_alter_table('message_annotations', schema=None) as batch_op:
         batch_op.alter_column('question', existing_type=sa.TEXT(), nullable=True)

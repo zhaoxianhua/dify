@@ -79,7 +79,6 @@ def _fetch_due_schedules(session: Session) -> list[WorkflowSchedulePlan]:
             )
         )
         .order_by(WorkflowSchedulePlan.next_run_at.asc())
-        .with_for_update(skip_locked=True)
         .limit(dify_config.WORKFLOW_SCHEDULE_POLLER_BATCH_SIZE)
     )
 

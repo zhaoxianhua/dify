@@ -49,6 +49,7 @@ from .vdb.upstash_config import UpstashConfig
 from .vdb.vastbase_vector_config import VastbaseVectorConfig
 from .vdb.vikingdb_config import VikingDBConfig
 from .vdb.weaviate_config import WeaviateConfig
+from .vdb.dingodb_config import DingoDBConfig
 
 
 class StorageConfig(BaseSettings):
@@ -109,7 +110,7 @@ class KeywordStoreConfig(BaseSettings):
 
 class DatabaseConfig(BaseSettings):
     # Database type selector
-    DB_TYPE: Literal["postgresql", "mysql", "oceanbase", "seekdb"] = Field(
+    DB_TYPE: Literal["postgresql", "mysql", "oceanbase", "seekdb", "dingodb"] = Field(
         description="Database type to use. OceanBase is MySQL-compatible.",
         default="postgresql",
     )
@@ -377,5 +378,6 @@ class MiddlewareConfig(
     TableStoreConfig,
     DatasetQueueMonitorConfig,
     MatrixoneConfig,
+    DingoDBConfig,
 ):
     pass

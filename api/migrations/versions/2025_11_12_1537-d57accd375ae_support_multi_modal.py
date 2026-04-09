@@ -37,8 +37,17 @@ def upgrade():
         )
         batch_op.create_index('segment_attachment_binding_attachment_idx', ['attachment_id'], unique=False)
 
-    with op.batch_alter_table('datasets', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('is_multimodal', sa.Boolean(), server_default=sa.text('false'), nullable=False))
+    conn = op.get_bind()
+    db_type = conn.dialect.name
+
+    if db_type == "postgresql":
+        with op.batch_alter_table('datasets', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('is_multimodal', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+    else:
+        op.execute("""
+        ALTER TABLE datasets
+        ADD COLUMN is_multimodal BOOLEAN NOT NULL DEFAULT false;
+        """)
 
     # ### end Alembic commands ###
 

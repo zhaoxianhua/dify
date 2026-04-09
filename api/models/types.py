@@ -4,7 +4,7 @@ from typing import Any, cast
 
 import sqlalchemy as sa
 from sqlalchemy import CHAR, TEXT, VARCHAR, LargeBinary, TypeDecorator
-from sqlalchemy.dialects.mysql import LONGBLOB, LONGTEXT
+from sqlalchemy.dialects.mysql import BLOB, LONGBLOB, LONGTEXT
 from sqlalchemy.dialects.postgresql import BYTEA, JSONB, UUID
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.sql.type_api import TypeEngine
@@ -74,6 +74,8 @@ class BinaryData(TypeDecorator[bytes | None]):
         if dialect.name == "postgresql":
             return dialect.type_descriptor(BYTEA())
         elif dialect.name == "mysql":
+            if dify_config.DB_TYPE == "dingodb":
+                return dialect.type_descriptor(BLOB())
             return dialect.type_descriptor(LONGBLOB())
         else:
             return dialect.type_descriptor(LargeBinary())

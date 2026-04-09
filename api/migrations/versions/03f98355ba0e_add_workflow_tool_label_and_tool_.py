@@ -7,6 +7,7 @@ Create Date: 2024-05-25 07:17:00.539125
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import text
 
 import models as models
 
@@ -18,16 +19,26 @@ depends_on = None
 
 
 def upgrade():
-    with op.batch_alter_table('tool_label_bindings', schema=None) as batch_op:
-        batch_op.create_unique_constraint('unique_tool_label_bind', ['tool_id', 'label_name'])
-
-    with op.batch_alter_table('tool_workflow_providers', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('label', sa.String(length=255), server_default='', nullable=False))
+    create_unique_idx_sql = """
+    CREATE UNIQUE INDEX IF NOT EXISTS unique_tool_label_bind
+    ON tool_label_bindings (tool_id, label_name);
+    """
+    op.execute(create_unique_idx_sql)
+    add_label_column_sql = """
+    ALTER TABLE tool_workflow_providers
+    ADD COLUMN label VARCHAR(255) NOT NULL DEFAULT '';
+    """
+    op.execute(add_label_column_sql)
 
 
 def downgrade():
-    with op.batch_alter_table('tool_workflow_providers', schema=None) as batch_op:
-        batch_op.drop_column('label')
+    # 回滚1：删除 label 列（原生 SQL 兼容 Dingodb）
+    drop_label_column_sql = "ALTER TABLE tool_workflow_providers DROP COLUMN IF EXISTS label;"
+    op.execute(drop_label_column_sql)
 
-    with op.batch_alter_table('tool_label_bindings', schema=None) as batch_op:
-        batch_op.drop_constraint('unique_tool_label_bind', type_='unique')
+    # 回滚2：删除唯一索引（Dingodb 兼容语法）
+    drop_unique_idx_sql = """
+    DROP INDEX IF EXISTS unique_tool_label_bind
+    ON tool_label_bindings;
+    """
+    op.execute(drop_unique_idx_sql)

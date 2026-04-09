@@ -49,3 +49,5 @@ def handle(sender, **kwargs):
             logger.info(click.style(f"Processed dataset: {dataset_id} latency: {end_at - start_at}", fg="green"))
         except DocumentIsPausedError as ex:
             logger.info(click.style(str(ex), fg="yellow"))
+        except Exception as ex:
+            logger.error(f"Indexing failed: {str(ex)}", exc_info=True)  # 打印完整异常栈

@@ -5,7 +5,7 @@ Revises: 33f5fac87f29
 Create Date: 2024-10-10 05:16:14.764268
 
 """
-
+import warnings
 import sqlalchemy as sa
 from alembic import op, context
 
@@ -15,6 +15,7 @@ down_revision = "d8e744d88ed6"
 branch_labels = None
 depends_on = None
 
+warnings.filterwarnings('ignore', 'Unknown schema content')
 
 def _is_pg(conn):
     return conn.dialect.name == "postgresql"

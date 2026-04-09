@@ -34,4 +34,5 @@ class VectorType(StrEnum):
     MATRIXONE = "matrixone"
     CLICKZETTA = "clickzetta"
     IRIS = "iris"
+    DINGODB = "dingodb"
     HOLOGRES = "hologres"
